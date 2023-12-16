@@ -26,10 +26,14 @@ export async function createInvoice(formData: FormData) {
   const amountInCents = amount * 100;
   const date = new Date().toISOString().split('T')[0];
 
-  await sql`
-    INSERT INTO invoices (customer_id, amount, status, date)
-    VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
-  `;
+  try {
+    await sql`
+      INSERT INTO invoices (customer_id, amount, status, date)
+      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
+    `;
+  } catch (error) {
+    return { message: 'Database Error: Faied to create invoice.' };
+  }
 
   revalidatePath(InvoicePath);
   redirect(InvoicePath);
@@ -43,20 +47,28 @@ export async function updateInvoice(id: string, formData: FormData) {
   });
   const amountInCents = amount * 100;
 
-  await sql`
-    UPDATE invoices
-    SET customer_id = ${customerId}, amount = ${amount}, status = ${status}
-    WHERE id = ${id}
-  `;
+  try {
+    await sql`
+      UPDATE invoices
+      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+      WHERE id = ${id}
+    `;
+  } catch (error) {
+    return { message: 'Database Error: Faied to update invoice.' };
+  }
 
   revalidatePath(InvoicePath);
   redirect(InvoicePath);
 }
 
 export async function deleteInvoice(id: string) {
-  await sql`
+  try {
+    const data = await sql`
     DELETE FROM invoices WHERE id = ${id}
   `;
-
-  revalidatePath(InvoicePath);
+    revalidatePath(InvoicePath);
+    return { message: 'Deleted invoice' };
+  } catch (error) {
+    return { message: 'Database Error: Faied to delete invoice.' };
+  }
 }
