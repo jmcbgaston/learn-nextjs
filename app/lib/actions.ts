@@ -132,15 +132,11 @@ export async function authenticate(prevState: AuthState, formData: FormData) {
   });
 
   if (!validatedFields.success) {
-    console.log({ validatedFields: validatedFields.error });
-
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Missing fields. Failed to log in.',
     };
   }
-
-  console.log({ validatedFields: validatedFields.data });
 
   try {
     await signIn('credentials', formData);
