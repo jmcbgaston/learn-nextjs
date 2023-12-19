@@ -20,9 +20,14 @@ const FormSchema = z.object({
   }),
   date: z.string(),
 });
+const AuthFormSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
+const Authenticate = AuthFormSchema;
 const InvoicePath = '/dashboard/invoices';
 
 export type State = {
@@ -30,6 +35,14 @@ export type State = {
     customerId?: string[];
     amount?: string[];
     status?: string[];
+  };
+  message?: string | null;
+};
+
+export type AuthState = {
+  errors?: {
+    email?: string[];
+    password?: string[];
   };
   message?: string | null;
 };
@@ -112,21 +125,35 @@ export async function deleteInvoice(id: string) {
   }
 }
 
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData,
-) {
+export async function authenticate(prevState: AuthState, formData: FormData) {
+  const validatedFields = Authenticate.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
+
+  if (!validatedFields.success) {
+    console.log({ validatedFields: validatedFields.error });
+
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing fields. Failed to log in.',
+    };
+  }
+
+  console.log({ validatedFields: validatedFields.data });
+
   try {
     await signIn('credentials', formData);
+    return { message: 'Success.' };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          return 'Invalid credentials.';
+          return { message: 'Invalid credentials.' };
         default:
-          return 'Something went wrong.';
+          return { message: 'Something went wrong.' };
       }
     }
-    throw error;
+    return { message: 'Something went wrong.' };
   }
 }
